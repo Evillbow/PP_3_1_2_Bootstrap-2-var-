@@ -32,16 +32,12 @@ public class UserService {
     }
 
     @Transactional
-    public void addUser(User user) {
+    public void addUser(User user, Set<String> roleNames) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-        Role roleUser = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new IllegalStateException("ROLE_USER not found"));
-
-        user.setRoles(Set.of(roleUser)); // всем новым по умолчанию ROLE_USER
-
+        user.setRoles(resolveRoles(roleNames));
         userRepository.save(user);
     }
+
 
     @Transactional
     public void deleteUser(Long id) {
@@ -54,13 +50,14 @@ public class UserService {
     }
 
     @Transactional
-    public void updateUser(User user) {
+    public void updateUser(User user, Set<String> roleNames) {
         User dbUser = userRepository.findById(user.getId());
 
         dbUser.setUsername(user.getUsername());
         dbUser.setName(user.getName());
         dbUser.setSurname(user.getSurname());
         dbUser.setYear(user.getYear());
+        dbUser.setRoles(resolveRoles(roleNames));
 
         if (user.getPassword() != null && !user.getPassword().isBlank()) {
             dbUser.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -68,6 +65,25 @@ public class UserService {
 
         userRepository.update(dbUser);
     }
+
+
+    private Set<Role> resolveRoles(Set<String> roleNames) {
+        if (roleNames == null || roleNames.isEmpty()) {
+            roleNames = Set.of("ROLE_USER");
+        }
+        return roleNames.stream()
+                .map(rn -> roleRepository.findByName(rn)
+                        .orElseThrow(() -> new IllegalStateException(rn + " not found")))
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
+    @Transactional(readOnly = true)
+    public Role getRoleByName(String name) {
+        return roleRepository.findByName(name)
+                .orElseThrow(() -> new IllegalStateException(name + " not found"));
+    }
+
+
 }
 
 

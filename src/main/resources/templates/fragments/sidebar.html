@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<div th:fragment="sidebar"
+     class="d-flex flex-column flex-shrink-0 p-3 bg-white"
+     style="height: calc(100vh - 56px); border-right: 1px solid #dee2e6;">
+
+    <ul class="nav nav-pills flex-column mb-auto">
+
+        <!-- Видно только ADMIN -->
+        <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+            <a th:href="@{/admin}"
+               class="nav-link"
+               th:classappend="${activePage}=='admin' ? ' active' : ''">
+                Admin
+            </a>
+        </li>
+
+        <!-- Видно USER и ADMIN -->
+        <li class="nav-item" sec:authorize="hasAnyRole('USER','ADMIN')">
+            <a th:href="@{/user}"
+               class="nav-link"
+               th:classappend="${activePage}=='user' ? ' active' : ''">
+                User
+            </a>
+        </li>
+
+    </ul>
+
+</div>
+
+</body>
+</html>
