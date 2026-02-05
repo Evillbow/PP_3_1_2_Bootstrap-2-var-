@@ -7,6 +7,8 @@ import javax.persistence.*;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import javax.persistence.Transient;
 
 @Entity
 @Table(name = "users")
@@ -29,7 +31,7 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -86,6 +88,15 @@ public class User implements UserDetails {
     public Set<Role> getRoles() { return roles; }
 
     public void setRoles(Set<Role> roles) { this.roles = roles; }
+
+
+    @Transient
+    public String getRolesCsv() {
+        if (roles == null) return "";
+        return roles.stream()
+                .map(Role::getName)     // "ROLE_ADMIN"
+                .collect(Collectors.joining(","));
+    }
 }
 
 

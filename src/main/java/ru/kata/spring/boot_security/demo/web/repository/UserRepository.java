@@ -15,9 +15,14 @@ public class UserRepository {
     private EntityManager entityManager;
 
     public List<User> findAll() {
+        var graph = entityManager.createEntityGraph(User.class);
+        graph.addAttributeNodes("roles");
+
         return entityManager.createQuery("select u from User u", User.class)
+                .setHint("javax.persistence.fetchgraph", graph)
                 .getResultList();
     }
+
 
     public Optional<User> findByUsernameWithRoles(String username) {
         return entityManager.createQuery(

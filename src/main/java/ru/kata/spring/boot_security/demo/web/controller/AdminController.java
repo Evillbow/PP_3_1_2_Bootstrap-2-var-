@@ -4,10 +4,14 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import ru.kata.spring.boot_security.demo.web.dto.UserForm;
 import ru.kata.spring.boot_security.demo.web.model.User;
 import ru.kata.spring.boot_security.demo.web.service.UserService;
 
+import javax.validation.Valid;
 import java.security.Principal;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -29,6 +33,7 @@ public class AdminController {
         model.addAttribute("rolesText", rolesText());
         model.addAttribute("roleAdmin", userService.getRoleByName("ROLE_ADMIN"));
         model.addAttribute("roleUser", userService.getRoleByName("ROLE_USER"));
+        model.addAttribute("userForm", new UserForm());
 
         return "admin";
     }
@@ -41,30 +46,43 @@ public class AdminController {
         model.addAttribute("rolesText", rolesText());
         model.addAttribute("roleAdmin", userService.getRoleByName("ROLE_ADMIN"));
         model.addAttribute("roleUser", userService.getRoleByName("ROLE_USER"));
+        model.addAttribute("userForm", new UserForm());
 
         return "admin";
     }
 
+
+
     @PostMapping("/users/add")
-    public String addUser(@RequestParam("username") String username,
-                          @RequestParam("password") String password,
-                          @RequestParam("name") String name,
-                          @RequestParam(value = "surname", required = false) String surname,
-                          @RequestParam(value = "year", required = false) Integer year,
-                          @RequestParam(value = "roles", required = false) Set<String> roles) {
+    public String addUser(@Valid @ModelAttribute("userForm") UserForm form,
+                          BindingResult br,
+                          RedirectAttributes ra) {
+
+        if (form.getPassword() == null || form.getPassword().isBlank()) {
+            br.rejectValue("password", "password.blank", "Password is required");
+        }
+
+        if (br.hasErrors()) {
+            ra.addFlashAttribute("errorsAdd", br.getAllErrors());
+            return "redirect:/admin#newUser";
+        }
 
         User user = new User();
-        user.setUsername(username);
-        user.setPassword(password);
-        user.setName(name);
-        user.setSurname(surname);
-        user.setYear(year);
+        user.setUsername(form.getUsername());
+        user.setPassword(form.getPassword());
+        user.setName(form.getName());
+        user.setSurname(form.getSurname());
+        user.setYear(form.getYear());
 
-        // вызываем перегруженный метод
+        Set<String> roles = form.getRoles();
+        if (roles == null || roles.isEmpty()) {
+            roles = Set.of("ROLE_USER");
+        }
+
         userService.addUser(user, roles);
-
         return "redirect:/admin";
     }
+
 
     @PostMapping("/users/delete")
     public String deleteUser(@RequestParam("id") Long id) {
@@ -80,27 +98,36 @@ public class AdminController {
     }
 
     @PostMapping("/users/update")
-    public String updateUser(@RequestParam("id") Long id,
-                             @RequestParam("username") String username,
-                             @RequestParam(value = "password", required = false) String password,
-                             @RequestParam("name") String name,
-                             @RequestParam(value = "surname", required = false) String surname,
-                             @RequestParam(value = "year", required = false) Integer year,
-                             @RequestParam(value = "roles", required = false) Set<String> roles) {
+    public String updateUser(@Valid @ModelAttribute("userForm") UserForm form,
+                             BindingResult br,
+                             RedirectAttributes ra) {
+
+        if (form.getId() == null) {
+            br.rejectValue("id", "id.null", "User id is required");
+        }
+
+        if (br.hasErrors()) {
+            ra.addFlashAttribute("errorsEdit", br.getAllErrors());
+            return "redirect:/admin";
+        }
 
         User user = new User();
-        user.setId(id);
-        user.setUsername(username);
-        user.setPassword(password);
-        user.setName(name);
-        user.setSurname(surname);
-        user.setYear(year);
+        user.setId(form.getId());
+        user.setUsername(form.getUsername());
+        user.setPassword(form.getPassword());
+        user.setName(form.getName());
+        user.setSurname(form.getSurname());
+        user.setYear(form.getYear());
 
-        // вызываем перегруженный метод
+        Set<String> roles = form.getRoles();
+        if (roles == null || roles.isEmpty()) {
+            roles = Set.of("ROLE_USER");
+        }
+
         userService.updateUser(user, roles);
-
         return "redirect:/admin";
     }
+
 
     private String rolesText() {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities()

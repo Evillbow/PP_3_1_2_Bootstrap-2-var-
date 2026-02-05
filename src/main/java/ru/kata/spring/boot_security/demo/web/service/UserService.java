@@ -62,8 +62,6 @@ public class UserService {
         if (user.getPassword() != null && !user.getPassword().isBlank()) {
             dbUser.setPassword(passwordEncoder.encode(user.getPassword()));
         }
-
-        userRepository.update(dbUser);
     }
 
 
